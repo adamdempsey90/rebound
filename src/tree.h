@@ -26,10 +26,10 @@
 #ifndef _TREE_H
 #define _TREE_H
 
-struct reb_treecell; 
+struct reb_treecell;
 
 /**
- * @brief The data structure of one node of a tree 
+ * @brief The data structure of one node of a tree
  */
 struct reb_treecell {
 	double x; /**< The x position of the center of a cell */
@@ -49,9 +49,9 @@ struct reb_treecell {
 	double mzz; /**< The zz component of the quadrupole tensor of mass of a cell */
 #endif // QUADRUPOLE
 	struct reb_treecell *oct[8]; /**< The pointer array to the octants of a cell */
-	int pt;		/**< It has double usages: in a leaf node, it stores the index 
-			  * of a particle; in a non-leaf node, it equals to (-1)*Total 
-			  * Number of particles within that cell. */ 
+	int pt;		/**< It has double usages: in a leaf node, it stores the index
+			  * of a particle; in a non-leaf node, it equals to (-1)*Total
+			  * Number of particles within that cell. */
 };
 
 /**
@@ -59,7 +59,7 @@ struct reb_treecell {
   * @details The tree needs to be updated when particles move, this function does that.
   * @param r Rebound simulation to operate on
   */
-void reb_tree_update(struct reb_simulation* const r);
+EXPORTIT void reb_tree_update(struct reb_simulation* const r);
 
 /**
   * @brief The wrap function calls reb_tree_update_gravity_data_in_cell() for each tree.
@@ -68,7 +68,7 @@ void reb_tree_update(struct reb_simulation* const r);
 void reb_tree_update_gravity_data(struct reb_simulation* const r);
 
 /**
-  * @brief The wrap function calls reb_tree_add_particle_to_cell() to add the particle into one of the trees. If the tree_root doesn't exist, then it initializes the tree. 
+  * @brief The wrap function calls reb_tree_add_particle_to_cell() to add the particle into one of the trees. If the tree_root doesn't exist, then it initializes the tree.
   * @param r Rebound simulation to operate on
   * @param pt Index of a particle.
   */

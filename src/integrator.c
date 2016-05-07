@@ -2,14 +2,14 @@
  * @file 	integrator.c
  * @brief 	Integration schemes.
  * @author 	Hanno Rein <hanno@hanno-rein.de>
- * @details	This file implements the leap-frog integration scheme.  
- * This scheme is second order accurate, symplectic and well suited for 
+ * @details	This file implements the leap-frog integration scheme.
+ * This scheme is second order accurate, symplectic and well suited for
  * non-rotating coordinate systems. Note that the scheme is formally only
  * first order accurate when velocity dependent forces are present.
- * 
+ *
  * @section 	LICENSE
  * Copyright (c) 2015 Hanno Rein
- * 
+ *
  * This file is part of rebound.
  *
  * rebound is free software: you can redistribute it and/or modify
@@ -92,8 +92,8 @@ void reb_integrator_part2(struct reb_simulation* r){
 			break;
 	}
 }
-	
-void reb_integrator_synchronize(struct reb_simulation* r){
+
+EXPORTIT void reb_integrator_synchronize(struct reb_simulation* r){
 	switch(r->integrator){
 		case REB_INTEGRATOR_IAS15:
 			reb_integrator_ias15_synchronize(r);
@@ -141,4 +141,3 @@ void reb_update_acceleration(struct reb_simulation* r){
 	PROFILING_STOP(PROFILING_CAT_GRAVITY)
 	PROFILING_START()
 }
-

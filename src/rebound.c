@@ -2,7 +2,7 @@
  * @file 	rebound.c
  * @brief 	Main REBOUND control structures and routine, iteration loop.
  * @author 	Hanno Rein <hanno@hanno-rein.de>
- * 
+ *
  * @section 	LICENSE
  * Copyright (c) 2011 Hanno Rein, Shangfei Liu
  *
@@ -31,8 +31,10 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/time.h>
+#ifndef _WIN32
 #include <sys/mman.h>
 #include <sys/wait.h>
+#endif
 #include <semaphore.h>
 #include <fcntl.h>
 #include "rebound.h"
@@ -61,28 +63,28 @@
 #ifndef LIBREBOUND
 static const char* logo[];				/**< Logo of rebound. */
 #endif // LIBREBOUND
-const char* reb_build_str = __DATE__ " " __TIME__;	// Date and time build string. 
+const char* reb_build_str = __DATE__ " " __TIME__;	// Date and time build string.
 const char* reb_version_str = "2.15.0";			// **VERSIONLINE** This line gets updated automatically. Do not edit manually.
 
 
-void reb_step(struct reb_simulation* const r){
+EXPORTIT void reb_step(struct reb_simulation* const r){
 	// A 'DKD'-like integrator will do the first 'D' part.
 	PROFILING_START()
 	reb_integrator_part1(r);
 	PROFILING_STOP(PROFILING_CAT_INTEGRATOR)
 
-	// Update and simplify tree. 
-	// Prepare particles for distribution to other nodes. 
+	// Update and simplify tree.
+	// Prepare particles for distribution to other nodes.
 	// This function also creates the tree if called for the first time.
 	if (r->tree_needs_update || r->gravity==REB_GRAVITY_TREE || r->collision==REB_COLLISION_TREE){
         // Check for root crossings.
         PROFILING_START()
-        reb_boundary_check(r);     
+        reb_boundary_check(r);
         PROFILING_STOP(PROFILING_CAT_BOUNDARY)
 
         // Update tree (this will remove particles which left the box)
 	    PROFILING_START()
-		reb_tree_update(r);          
+		reb_tree_update(r);
 	    PROFILING_STOP(PROFILING_CAT_GRAVITY)
 	}
 
@@ -94,7 +96,7 @@ void reb_step(struct reb_simulation* const r){
 
 	if (r->tree_root!=NULL && r->gravity==REB_GRAVITY_TREE){
 		// Update center of mass and quadrupole moments in tree in preparation of force calculation.
-		reb_tree_update_gravity_data(r); 
+		reb_tree_update_gravity_data(r);
 #ifdef MPI
 		// Prepare essential tree (and particles close to the boundary needed for collisions) for distribution to other nodes.
 		reb_tree_prepare_essential_tree_for_gravity(r);
@@ -104,12 +106,12 @@ void reb_step(struct reb_simulation* const r){
 #endif // MPI
 	}
 
-	// Calculate accelerations. 
+	// Calculate accelerations.
 	reb_calculate_acceleration(r);
 	if (r->N_var){
 		reb_calculate_acceleration_var(r);
 	}
-	// Calculate non-gravity accelerations. 
+	// Calculate non-gravity accelerations.
 	if (r->additional_forces) r->additional_forces(r);
 	PROFILING_STOP(PROFILING_CAT_GRAVITY)
 
@@ -126,10 +128,10 @@ void reb_step(struct reb_simulation* const r){
 	// Do collisions here. We need both the positions and velocities at the same time.
 	// Check for root crossings.
 	PROFILING_START()
-	reb_boundary_check(r);     
+	reb_boundary_check(r);
 	if (r->tree_needs_update){
         // Update tree (this will remove particles which left the box)
-		reb_tree_update(r);          
+		reb_tree_update(r);
 	}
 	PROFILING_STOP(PROFILING_CAT_BOUNDARY)
 
@@ -140,7 +142,7 @@ void reb_step(struct reb_simulation* const r){
 }
 
 void reb_exit(const char* const msg){
-	// This function should also kill all children. 
+	// This function should also kill all children.
 	// Not implemented as pid is not easy to get to.
 	// kill(pid, SIGKILL);
 	fprintf(stderr,"\n\033[1mError!\033[0m %s\n",msg);
@@ -152,7 +154,7 @@ void reb_warning(const char* const msg){
 }
 
 
-void reb_configure_box(struct reb_simulation* const r, const double root_size, const int root_nx, const int root_ny, const int root_nz){
+EXPORTIT void reb_configure_box(struct reb_simulation* const r, const double root_size, const int root_nx, const int root_ny, const int root_nz){
 	r->root_size = root_size;
 	r->root_nx = root_nx;
 	r->root_ny = root_ny;
@@ -200,7 +202,7 @@ void reb_free_simulation(struct reb_simulation* const r){
 	free(r);
 }
 
-void reb_free_pointers(struct reb_simulation* const r){
+EXPORTIT void reb_free_pointers(struct reb_simulation* const r){
 	reb_tree_delete(r);
 	free(r->gravity_cs 	);
 	free(r->collisions	);
@@ -255,7 +257,7 @@ struct reb_simulation* reb_create_simulation(){
 	return r;
 }
 
-void reb_init_simulation(struct reb_simulation* r){
+EXPORTIT void reb_init_simulation(struct reb_simulation* r){
 #ifndef LIBREBOUND
 	int i =0;
 	while (logo[i]!=NULL){ printf("%s",logo[i++]); }
@@ -264,7 +266,7 @@ void reb_init_simulation(struct reb_simulation* r){
 	reb_tools_init_srand();
 	reb_reset_temporary_pointers(r);
 	reb_reset_function_pointers(r);
-	r->t 		= 0; 
+	r->t 		= 0;
 	r->G 		= 1;
 	r->softening 	= 0;
 	r->dt		= 0.001;
@@ -277,17 +279,17 @@ void reb_init_simulation(struct reb_simulation* r){
 	r->nghostx	= 0;
 	r->nghosty	= 0;
 	r->nghostz	= 0;
-	r->N 		= 0;	
-	r->allocatedN	= 0;	
-	r->N_active 	= -1; 	
-	r->testparticle_type = 0; 	
-	r->N_var 	= 0; 	
-	r->var_config_N	= 0; 	
-	r->var_config 	= NULL; 	
-	r->exit_min_distance 	= 0; 	
-	r->exit_max_distance 	= 0; 	
-	r->max_radius[0]	= 0.; 	
-	r->max_radius[1]	= 0.; 	
+	r->N 		= 0;
+	r->allocatedN	= 0;
+	r->N_active 	= -1;
+	r->testparticle_type = 0;
+	r->N_var 	= 0;
+	r->var_config_N	= 0;
+	r->var_config 	= NULL;
+	r->exit_min_distance 	= 0;
+	r->exit_max_distance 	= 0;
+	r->max_radius[0]	= 0.;
+	r->max_radius[1]	= 0.;
 	r->status		= REB_RUNNING;
 	r->exact_finish_time 	= 1;
 	r->force_is_velocity_dependent = 0;
@@ -297,8 +299,8 @@ void reb_init_simulation(struct reb_simulation* r){
 
 	r->minimum_collision_velocity = 0;
 	r->collisions_plog 	= 0;
-	r->collisions_Nlog 	= 0;	
-	
+	r->collisions_Nlog 	= 0;
+
 	// Default modules
 	r->integrator   = REB_INTEGRATOR_IAS15;
 	r->boundary     = REB_BOUNDARY_NONE;
@@ -306,7 +308,7 @@ void reb_init_simulation(struct reb_simulation* r){
 	r->collision    = REB_COLLISION_NONE;
 
 
-	// Integrators	
+	// Integrators
 	// ********** WHFAST
 	// the defaults below are chosen to safeguard the user against spurious results, but
 	// will be slower and less accurate
@@ -316,18 +318,18 @@ void reb_init_simulation(struct reb_simulation* r){
 	r->ri_whfast.is_synchronized = 1;
 	r->ri_whfast.timestep_warning = 0;
 	r->ri_whfast.recalculate_jacobi_but_not_synchronized_warning = 0;
-	
+
 	// ********** IAS15
 	r->ri_ias15.epsilon 		= 1e-9;
 	r->ri_ias15.min_dt 		= 0;
 	r->ri_ias15.epsilon_global	= 1;
-	r->ri_ias15.iterations_max_exceeded = 0;	
-	
+	r->ri_ias15.iterations_max_exceeded = 0;
+
 	// ********** SEI
 	r->ri_sei.OMEGA  	= 1;
 	r->ri_sei.OMEGAZ 	= -1;
 	r->ri_sei.lastdt 	= 0;
-	
+
 	r->ri_hybrid.switch_ratio = 8; // Default of 8 mutual Hill radii
 	r->ri_hybrid.mode = SYMPLECTIC;
 
@@ -337,21 +339,21 @@ void reb_init_simulation(struct reb_simulation* r){
 	r->opening_angle2	= 0.25;
 
 #ifdef MPI
-    r->mpi_id = 0;                            
-    r->mpi_num = 0;                           
-    r->particles_send = NULL;  
-    r->particles_send_N = 0;	              
-    r->particles_send_Nmax = 0;	              
-    r->particles_recv = NULL;	  
-    r->particles_recv_N = 0;                  
-    r->particles_recv_Nmax = 0;               
-    
+    r->mpi_id = 0;
+    r->mpi_num = 0;
+    r->particles_send = NULL;
+    r->particles_send_N = 0;
+    r->particles_send_Nmax = 0;
+    r->particles_recv = NULL;
+    r->particles_recv_N = 0;
+    r->particles_recv_Nmax = 0;
+
     r->tree_essential_send = NULL;
-    r->tree_essential_send_N = 0;             
-    r->tree_essential_send_Nmax = 0;          
+    r->tree_essential_send_N = 0;
+    r->tree_essential_send_Nmax = 0;
     r->tree_essential_recv = NULL;
-    r->tree_essential_recv_N = 0;             
-    r->tree_essential_recv_Nmax = 0;          
+    r->tree_essential_recv_N = 0;
+    r->tree_essential_recv_Nmax = 0;
 
 #else // MPI
 #ifndef LIBREBOUND
@@ -416,7 +418,7 @@ int reb_check_exit(struct reb_simulation* const r, const double tmax, double* la
 	}
 #else
 	int status_max = 0;
-	MPI_Allreduce(&(r->status), &status_max, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD); 
+	MPI_Allreduce(&(r->status), &status_max, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
     if (status_max>=0){
         r->status = status_max;
     }
@@ -463,7 +465,7 @@ void reb_run_heartbeat(struct reb_simulation* const r){
 		usleep(r->usleep);
 	}
 }
-enum REB_STATUS reb_integrate(struct reb_simulation* const r_user, double tmax){
+EXPORTIT enum REB_STATUS reb_integrate(struct reb_simulation* const r_user, double tmax){
 #ifdef MPI
 	// Distribute particles
 	reb_communication_mpi_distribute_particles(r_user);
@@ -474,11 +476,11 @@ enum REB_STATUS reb_integrate(struct reb_simulation* const r_user, double tmax){
         opengl_enabled = 0;
     }
 
-    // Copy and share simulation struct 
+    // Copy and share simulation struct
     struct reb_simulation* r = NULL;
     char sem_name[256] = "reb_display";
     sem_t* display_mutex = NULL;
-   
+
     if (opengl_enabled){
         r = (struct reb_simulation*)mmap(r_user, sizeof(struct reb_simulation), PROT_READ|PROT_WRITE, MAP_ANON|MAP_SHARED, -1, 0);
 	    memcpy(r, r_user, sizeof(struct reb_simulation));
@@ -497,8 +499,8 @@ enum REB_STATUS reb_integrate(struct reb_simulation* const r_user, double tmax){
             perror("sem_open");
             exit(EXIT_FAILURE);
         }
-        // Need root_size for visualization. Creating one. 
-        if (r->root_size==-1){  
+        // Need root_size for visualization. Creating one.
+        if (r->root_size==-1){
             reb_warning("Configuring box automatically for vizualization based on particle positions.");
             const struct reb_particle* p = r->particles;
             double max_r = 0;
@@ -529,7 +531,7 @@ enum REB_STATUS reb_integrate(struct reb_simulation* const r_user, double tmax){
 	r->status = REB_RUNNING;
 	reb_run_heartbeat(r);
 
-	
+
 #ifdef OPENGL
     if (opengl_enabled){
         pid_t   childpid;
@@ -543,7 +545,7 @@ enum REB_STATUS reb_integrate(struct reb_simulation* const r_user, double tmax){
         } else {        // Parent (computation)
             PROFILING_START()
             while(reb_check_exit(r,tmax,&last_full_dt)<0){
-                sem_wait(display_mutex);    
+                sem_wait(display_mutex);
                 PROFILING_STOP(PROFILING_CAT_VISUALIZATION)
                 reb_step(r);
                 reb_run_heartbeat(r);
@@ -555,7 +557,7 @@ enum REB_STATUS reb_integrate(struct reb_simulation* const r_user, double tmax){
     }else{
 #endif // OPENGL
         while(reb_check_exit(r,tmax,&last_full_dt)<0){
-            reb_step(r); 
+            reb_step(r);
             reb_run_heartbeat(r);
         }
 #ifdef OPENGL
@@ -564,7 +566,7 @@ enum REB_STATUS reb_integrate(struct reb_simulation* const r_user, double tmax){
 
     reb_integrator_synchronize(r);
     if(r->exact_finish_time==1){ // if finish_time = 1, r->dt could have been shrunk, so set to the last full timestep
-        r->dt = last_full_dt; 
+        r->dt = last_full_dt;
     }
 
 #ifdef OPENGL
@@ -593,37 +595,37 @@ enum REB_STATUS reb_integrate(struct reb_simulation* const r_user, double tmax){
 
 #ifndef LIBREBOUND
 static const char* logo[] = {
-"          _                           _  \n",   
-"         | |                         | | \n",  
-" _ __ ___| |__   ___  _   _ _ __   __| | \n", 
-"| '__/ _ \\ '_ \\ / _ \\| | | | '_ \\ / _` | \n", 
-"| | |  __/ |_) | (_) | |_| | | | | (_| | \n", 
-"|_|  \\___|_.__/ \\___/ \\__,_|_| |_|\\__,_| \n", 
-"                                         \n",   
+"          _                           _  \n",
+"         | |                         | | \n",
+" _ __ ___| |__   ___  _   _ _ __   __| | \n",
+"| '__/ _ \\ '_ \\ / _ \\| | | | '_ \\ / _` | \n",
+"| | |  __/ |_) | (_) | |_| | | | | (_| | \n",
+"|_|  \\___|_.__/ \\___/ \\__,_|_| |_|\\__,_| \n",
+"                                         \n",
 "              `-:://::.`                 \n",
-"          `/oshhoo+++oossso+:`           \n", 
-"       `/ssooys++++++ossssssyyo:`        \n", 
-"     `+do++oho+++osssso++++++++sy/`      \n", 
-"    :yoh+++ho++oys+++++++++++++++ss.     \n", 
-"   /y++hooyyooshooo+++++++++++++++oh-    \n", 
-"  -dsssdssdsssdssssssssssooo+++++++oh`   \n", 
-"  ho++ys+oy+++ho++++++++oosssssooo++so   \n", 
-" .d++oy++ys+++oh+++++++++++++++oosssod   \n", 
-" -h+oh+++yo++++oyo+++++++++++++++++oom   \n", 
-" `d+ho+++ys+++++oys++++++++++++++++++d   \n", 
-"  yys++++oy+++++++oys+++++++++++++++s+   \n", 
-"  .m++++++h+++++++++oys++++++++++++oy`   \n", 
-"   -yo++++ss++++++++++oyso++++++++oy.    \n", 
-"    .ss++++ho+++++++++++osys+++++yo`     \n", 
-"      :ss+++ho+++++++++++++osssss-       \n", 
-"        -ossoys++++++++++++osso.         \n", 
-"          `-/oyyyssosssyso+/.            \n", 
-"                ``....`                  \n", 
-"                                         \n",   
+"          `/oshhoo+++oossso+:`           \n",
+"       `/ssooys++++++ossssssyyo:`        \n",
+"     `+do++oho+++osssso++++++++sy/`      \n",
+"    :yoh+++ho++oys+++++++++++++++ss.     \n",
+"   /y++hooyyooshooo+++++++++++++++oh-    \n",
+"  -dsssdssdsssdssssssssssooo+++++++oh`   \n",
+"  ho++ys+oy+++ho++++++++oosssssooo++so   \n",
+" .d++oy++ys+++oh+++++++++++++++oosssod   \n",
+" -h+oh+++yo++++oyo+++++++++++++++++oom   \n",
+" `d+ho+++ys+++++oys++++++++++++++++++d   \n",
+"  yys++++oy+++++++oys+++++++++++++++s+   \n",
+"  .m++++++h+++++++++oys++++++++++++oy`   \n",
+"   -yo++++ss++++++++++oyso++++++++oy.    \n",
+"    .ss++++ho+++++++++++osys+++++yo`     \n",
+"      :ss+++ho+++++++++++++osssss-       \n",
+"        -ossoys++++++++++++osso.         \n",
+"          `-/oyyyssosssyso+/.            \n",
+"                ``....`                  \n",
+"                                         \n",
 "Written by Hanno Rein, Shangfei Liu,     \n",
 "David Spiegel, Daniel Tamayo and many    \n",
-"other. REBOUND project website:          \n",  
-"http://github.com/hannorein/rebound/     \n",    
-"                                         \n", 
+"other. REBOUND project website:          \n",
+"http://github.com/hannorein/rebound/     \n",
+"                                         \n",
 NULL};
 #endif // LIBREBOUND

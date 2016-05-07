@@ -2,7 +2,7 @@
  * @file 	input.c
  * @brief 	Parse command line options and read retart files.
  * @author 	Hanno Rein <hanno@hanno-rein.de>
- * 
+ *
  * @section 	LICENSE
  * Copyright (c) 2011 Hanno Rein, Shangfei Liu
  *
@@ -85,16 +85,16 @@ char* reb_read_char(int argc, char** argv, const char* argument){
 	return NULL;
 }
 
-struct reb_simulation* reb_create_simulation_from_binary(char* filename){
+EXPORTIT struct reb_simulation* reb_create_simulation_from_binary(char* filename){
 	reb_warning("You have to reset function pointers after creating a reb_simulation struct with a binary file.");
 	struct reb_simulation* r = malloc(sizeof(struct reb_simulation));
 #ifdef MPI
 	char filename_mpi[1024];
 #warning following code not working yet. mpi_id will be random number.
 	sprintf(filename_mpi,"%s_%d",filename,r->mpi_id);
-	FILE* inf = fopen(filename_mpi,"rb"); 
+	FILE* inf = fopen(filename_mpi,"rb");
 #else // MPI
-	FILE* inf = fopen(filename,"rb"); 
+	FILE* inf = fopen(filename,"rb");
 #endif // MPI
 	if (inf){
 		long objects = 0;
@@ -131,4 +131,3 @@ struct reb_simulation* reb_create_simulation_from_binary(char* filename){
 	}
 	return r;
 }
-

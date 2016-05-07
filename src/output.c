@@ -2,7 +2,7 @@
  * @file 	output.c
  * @brief 	Output routines.
  * @author 	Hanno Rein <hanno@hanno-rein.de>
- * 
+ *
  * @section 	LICENSE
  * Copyright (c) 2011 Hanno Rein, Shangfei Liu
  *
@@ -48,7 +48,7 @@ int reb_output_check_phase(struct reb_simulation* r, double interval,double phas
 	if (floor(shift/interval)!=floor((shift-r->dt)/interval)){
 		return 1;
 	}
-	// Output at beginning 
+	// Output at beginning
 	if (r->t==0){
 		return 1;
 	}
@@ -83,7 +83,7 @@ void reb_output_timing(struct reb_simulation* r, const double tmax){
 	const int N = r->N;
 #ifdef MPI
 	int N_tot = 0;
-	MPI_Reduce(&N, &N_tot, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD); 
+	MPI_Reduce(&N, &N_tot, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 	if (r->mpi_id!=0) return;
 #else
 	int N_tot = N;
@@ -165,9 +165,9 @@ void reb_output_ascii(struct reb_simulation* r, char* filename){
 #ifdef MPI
 	char filename_mpi[1024];
 	sprintf(filename_mpi,"%s_%d",filename,r->mpi_id);
-	FILE* of = fopen(filename_mpi,"a"); 
+	FILE* of = fopen(filename_mpi,"a");
 #else // MPI
-	FILE* of = fopen(filename,"a"); 
+	FILE* of = fopen(filename,"a");
 #endif // MPI
 	if (of==NULL){
 		reb_exit("Can not open file.");
@@ -184,9 +184,9 @@ void reb_output_orbits(struct reb_simulation* r, char* filename){
 #ifdef MPI
 	char filename_mpi[1024];
 	sprintf(filename_mpi,"%s_%d",filename,r->mpi_id);
-	FILE* of = fopen(filename_mpi,"a"); 
+	FILE* of = fopen(filename_mpi,"a");
 #else // MPI
-	FILE* of = fopen(filename,"a"); 
+	FILE* of = fopen(filename,"a");
 #endif // MPI
 	if (of==NULL){
 		reb_exit("Can not open file.");
@@ -200,13 +200,13 @@ void reb_output_orbits(struct reb_simulation* r, char* filename){
 	fclose(of);
 }
 
-void reb_output_binary(struct reb_simulation* r, char* filename){
+EXPORTIT void reb_output_binary(struct reb_simulation* r, char* filename){
 #ifdef MPI
 	char filename_mpi[1024];
 	sprintf(filename_mpi,"%s_%d",filename,r->mpi_id);
-	FILE* of = fopen(filename_mpi,"wb"); 
+	FILE* of = fopen(filename_mpi,"wb");
 #else // MPI
-	FILE* of = fopen(filename,"wb"); 
+	FILE* of = fopen(filename,"wb");
 #endif // MPI
 	if (of==NULL){
 		reb_exit("Can not open file.");
@@ -224,9 +224,9 @@ void reb_output_binary_positions(struct reb_simulation* r, char* filename){
 #ifdef MPI
 	char filename_mpi[1024];
 	sprintf(filename_mpi,"%s_%d",filename,r->mpi_id);
-	FILE* of = fopen(filename_mpi,"wb"); 
+	FILE* of = fopen(filename_mpi,"wb");
 #else // MPI
-	FILE* of = fopen(filename,"wb"); 
+	FILE* of = fopen(filename,"wb");
 #endif // MPI
 	if (of==NULL){
 		reb_exit("Can not open file.");
@@ -268,9 +268,9 @@ void reb_output_velocity_dispersion(struct reb_simulation* r, char* filename){
 	int N_tot = 0;
 	struct reb_vec3d A_tot = {.x=0, .y=0, .z=0};
 	struct reb_vec3d Q_tot = {.x=0, .y=0, .z=0};
-	MPI_Reduce(&N, &N_tot, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD); 
-	MPI_Reduce(&A, &A_tot, 3, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD); 
-	MPI_Reduce(&Q, &Q_tot, 3, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD); 
+	MPI_Reduce(&N, &N_tot, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+	MPI_Reduce(&A, &A_tot, 3, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	MPI_Reduce(&Q, &Q_tot, 3, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 	if (r->mpi_id!=0) return;
 #else
 	int N_tot = N;
@@ -280,12 +280,10 @@ void reb_output_velocity_dispersion(struct reb_simulation* r, char* filename){
 	Q_tot.x = sqrt(Q_tot.x/(double)N_tot);
 	Q_tot.y = sqrt(Q_tot.y/(double)N_tot);
 	Q_tot.z = sqrt(Q_tot.z/(double)N_tot);
-	FILE* of = fopen(filename,"a"); 
+	FILE* of = fopen(filename,"a");
 	if (of==NULL){
 		reb_exit("Can not open file.");
 	}
 	fprintf(of,"%e\t%e\t%e\t%e\t%e\t%e\t%e\n",r->t,A_tot.x,A_tot.y,A_tot.z,Q_tot.x,Q_tot.y,Q_tot.z);
 	fclose(of);
 }
-
-	

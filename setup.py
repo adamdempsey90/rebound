@@ -12,12 +12,15 @@ if suffix is None:
     suffix = ".so"
 
 extra_link_args=[]
+if sys.platform == 'win32':
+    print("Building on Windows.")
+    print sysconfig.get_config_vars()
 if sys.platform == 'darwin':
     from distutils import sysconfig
     vars = sysconfig.get_config_vars()
     vars['LDSHARED'] = vars['LDSHARED'].replace('-bundle', '-shared')
     extra_link_args=['-Wl,-install_name,@rpath/librebound'+suffix]
-    
+
 libreboundmodule = Extension('librebound',
                     sources = [ 'src/rebound.c',
                                 'src/integrator_ias15.c',

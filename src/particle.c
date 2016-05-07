@@ -2,7 +2,7 @@
  * @file 	particle.c
  * @brief 	reb_particle structure and main particle routines.
  * @author 	Hanno Rein <hanno@hanno-rein.de>
- * 
+ *
  * @section 	LICENSE
  * Copyright (c) 2011 Hanno Rein, Shangfei Liu
  *
@@ -39,7 +39,7 @@
 #endif // MPI
 
 #ifdef GRAVITY_GRAPE
-#warning Fix this. 
+#warning Fix this.
 extern double gravity_minimum_mass;
 #endif // GRAVITY_GRAPE
 
@@ -62,7 +62,7 @@ static void reb_add_local(struct reb_simulation* const r, struct reb_particle pt
 	(r->N)++;
 }
 
-void reb_add(struct reb_simulation* const r, struct reb_particle pt){
+EXPORTIT void reb_add(struct reb_simulation* const r, struct reb_particle pt){
 #ifndef COLLISIONS_NONE
 	if (pt.r>=r->max_radius[0]){
 		r->max_radius[1] = r->max_radius[0];
@@ -83,7 +83,7 @@ void reb_add(struct reb_simulation* const r, struct reb_particle pt){
 	int root_n_per_node = r->root_n/r->mpi_num;
 	int proc_id = rootbox/root_n_per_node;
 	if (proc_id != r->mpi_id && r->N >= r->N_active){
-		// Add particle to array and send them to proc_id later. 
+		// Add particle to array and send them to proc_id later.
 		reb_communication_mpi_add_particle_to_send_queue(r,pt,proc_id);
 		return;
 	}
@@ -101,7 +101,7 @@ int reb_get_rootbox_for_particle(const struct reb_simulation* const r, struct re
 	return index;
 }
 
-void reb_remove_all(struct reb_simulation* const r){
+EXPORTIT void reb_remove_all(struct reb_simulation* const r){
 	r->N 		= 0;
 	r->allocatedN 	= 0;
 	r->N_active 	= -1;
@@ -110,7 +110,7 @@ void reb_remove_all(struct reb_simulation* const r){
 	r->particles 	= NULL;
 }
 
-int reb_remove(struct reb_simulation* const r, int index, int keepSorted){
+EXPORTIT int reb_remove(struct reb_simulation* const r, int index, int keepSorted){
 	if (r->N==1){
 	    r->N = 0;
 		fprintf(stderr, "Last particle removed.\n");
@@ -146,7 +146,7 @@ int reb_remove(struct reb_simulation* const r, int index, int keepSorted){
 	return 1;
 }
 
-int reb_remove_by_id(struct reb_simulation* const r, int id, int keepSorted){
+EXPORTIT int reb_remove_by_id(struct reb_simulation* const r, int id, int keepSorted){
 	int success = 0;
 	for(int i=0;i<r->N;i++){
 		if(r->particles[i].id == id){
